@@ -1,28 +1,43 @@
-== README
+== Apache+Passenger+HAProxy+Malformed request = crashing passenger
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+tl;dr;searchable;
+  Why is my PassengerAgent Processes aborted! signo=SIGSEGV(11), reason=SEGV_MAPERR
+  A blank/empty Host header may be crashing your process when run under apache2
 
-Things you may want to cover:
+Given:
 
-* Ruby version
+  * Apache/2.4.7 (Ubuntu)
+  * Ruby ruby 2.2.0p0 (2014-12-25 revision 49005) [x86_64-linux]
+  * Passenger passenger-5.0.8 / passenger-5.0.6
+  * HAProxy 1.5
+  
+deploy this repo and then make a request with a malformed Host header.
 
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+  echo -e 'GET / HTTP/1.1\r\nHost: \n\n' |nc localhost 80
 
 
-Please feel free to use a different markup language if you do not plan to run
-<tt>rake doc:app</tt>.
+While It is a known issue that HTTP/1.1 requires a Host header, and that it's possible to set the host header for the haproxy health check with:
+
+* option httpchk OPTIONS * HTTP/1.1\r\nHost:\ www
+
+It's not really ideal that passenger crashes:
+
+---
+
+[ pid=19472, timestamp=1432932619 ] Process aborted! signo=SIGSEGV(11), reason=SEGV_MAPERR, si_addr=0x10, randomSeed=1432932617
+[ pid=19472 ] Crash log dumped to /var/tmp/passenger-crash-log.1432932619
+[ pid=19472 ] Date, uname and ulimits:
+Fri May 29 20:50:19 UTC 2015
+Linux 2.6.32-042stab079.5 #1 SMP Fri Aug 2 17:16:15 MSK 2013 x86_64 x86_64
+time(seconds)        unlimited
+file(blocks)         unlimited
+data(kbytes)         unlimited
+stack(kbytes)        10240
+coredump(blocks)     0
+memory(kbytes)       unlimited
+locked memory(kbytes) 64
+process              1546159
+nofiles              8192
+vmemory(kbytes)      unlimited
+locks                unlimited
+[ pid=19472 ] Phusion Passenger version: 5.0.8
